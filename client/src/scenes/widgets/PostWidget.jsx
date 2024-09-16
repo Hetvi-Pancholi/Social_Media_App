@@ -21,7 +21,7 @@ const PostWidget = ({
   picturePath,
   userPicturePath,
   likes,
-  comments,
+  comments = [], // Ensure comments is an array by default
 }) => {
   const [isComments, setIsComments] = useState(false);
   const dispatch = useDispatch();
@@ -35,16 +35,28 @@ const PostWidget = ({
   const primary = palette.primary.main;
 
   const patchLike = async () => {
-    const response = await fetch(`http://localhost:3001/posts/${postId}/like`, {
-      method: "PATCH",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ userId: loggedInUserId }),
-    });
-    const updatedPost = await response.json();
-    dispatch(setPost({ post: updatedPost }));
+    try {
+      const response = await fetch(
+        `http://localhost:3001/posts/${postId}/like`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ userId: loggedInUserId }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to like post");
+      }
+
+      const updatedPost = await response.json();
+      dispatch(setPost({ post: updatedPost }));
+    } catch (error) {
+      console.error(error.message);
+    }
   };
 
   return (
@@ -92,16 +104,23 @@ const PostWidget = ({
           <ShareOutlined />
         </IconButton>
       </FlexBetween>
+
       {isComments && (
         <Box mt="0.5rem">
-          {comments.map((comment, i) => (
-            <Box key={`${name}-${i}`}>
-              <Divider />
-              <Typography sx={{ color: main, m: "0.5rem 0", pl: "1rem" }}>
-                {comment}
-              </Typography>
-            </Box>
-          ))}
+          {comments.length > 0 ? (
+            comments.map((comment, i) => (
+              <Box key={`${name}-${i}`}>
+                <Divider />
+                <Typography sx={{ color: main, m: "0.5rem 0", pl: "1rem" }}>
+                  {comment}
+                </Typography>
+              </Box>
+            ))
+          ) : (
+            <Typography sx={{ color: main, m: "0.5rem 0", pl: "1rem" }}>
+              No comments yet.
+            </Typography>
+          )}
           <Divider />
         </Box>
       )}
